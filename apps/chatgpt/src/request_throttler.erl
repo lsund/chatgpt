@@ -60,7 +60,7 @@ handle_info(ping, State) ->
     Queue1 =
         case State#state.queue of
             [Request | TL] ->
-                case continue(State#state.conn, Request) of
+                case continue(State#state.conn, State#state.api_key, Request) of
                     done -> TL;
                     Request1 -> [Request1 | TL]
                 end;
@@ -71,21 +71,22 @@ handle_info(ping, State) ->
 handle_info(_Msg, State) ->
     {noreply, State}.
 
-continue(Conn, {URI, Module, Meta, Data} = Request) ->
+continue(Conn, ApiKey, {URI, Module, Meta, Data} = Request) ->
     Credits = maps:get(credits, Meta),
     case Credits - 1 of
         0 ->
-            do_rest_call(Conn, Request),
+            do_rest_call(Conn, ApiKey, Request),
             done;
         _ ->
             {URI, Module, maps:update(credits, Credits - 1, Meta, Data)}
     end.
 
-do_rest_call(Conn, {URI, Module, Meta, Data}) ->
+do_rest_call(Conn, ApiKey, {URI, Module, Meta, Data}) ->
+    ?LOG_NOTICE(#{api_key => ApiKey}),
     Headers = #{
         <<"Content-type">> => <<"application/json">>,
         <<"Authorization">> =>
-            <<"Bearer TODO">>
+            iolist_to_binary([<<"Bearer ">>, ApiKey])
     },
     RequestBody = jsx:encode(Data),
     StreamRef = gun:request(Conn, <<"POST">>, URI, Headers, RequestBody),
@@ -103,12 +104,6 @@ do_rest_call(Conn, {URI, Module, Meta, Data}) ->
             ?LOG_ERROR(#{gun_failed => Error2, part => body}),
             {error, Error2}
     end.
-
-compose_query(Q) when is_map(Q) ->
-    uri_string:compose_query([
-        {atom_to_binary(K), V}
-     || {K, V} <- maps:to_list(Q)
-    ]).
 
 handle_call(Call, _From, _State) ->
     error({invalid_cast, Call}).

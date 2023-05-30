@@ -57,7 +57,6 @@ init([]) ->
     [Data] = yamerl:decode_file("config/data.yaml", [
         str_node_as_binary, {map_node_format, map}
     ]),
-    ?LOG_NOTICE(#{foo => Data}),
     ChildSpecs = [
         #{
             id => throttler,
