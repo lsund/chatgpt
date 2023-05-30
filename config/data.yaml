@@ -1,0 +1,7 @@
+model: gpt-3.5-turbo
+
+messages:
+  - role: user
+    content: "How can I undo an git stash pop?"
+
+temperature: 0.7

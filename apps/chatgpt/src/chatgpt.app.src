@@ -1,0 +1,16 @@
+{application, chatgpt, [
+    {description, "An OTP application"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {applications, [
+        kernel,
+        stdlib,
+        gun,
+        cowlib,
+        yamerl,
+        eredis
+    ]},
+    {mod, {chatgpt_app, []}},
+    {env, []},
+    {links, []}
+]}.
