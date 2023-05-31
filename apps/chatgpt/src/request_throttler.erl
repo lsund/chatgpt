@@ -82,7 +82,6 @@ continue(Conn, ApiKey, {URI, Module, Meta, Data} = Request) ->
     end.
 
 do_rest_call(Conn, ApiKey, {URI, Module, Meta, Data}) ->
-    ?LOG_NOTICE(#{api_key => ApiKey}),
     Headers = #{
         <<"Content-type">> => <<"application/json">>,
         <<"Authorization">> =>

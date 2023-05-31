@@ -19,3 +19,4 @@ rebar3.crashdump
 *~
 *Zone.Identifier
 config/simple.yaml
+config/data.yaml

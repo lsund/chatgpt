@@ -68,12 +68,18 @@ handle_cast({handle_response, Response}, State) ->
     #{<<"choices">> := Choices} = ResponseBody,
     lists:foreach(
         fun(#{<<"message">> := #{<<"content">> := Message}}) ->
-            ?LOG_NOTICE(#{message => binary_to_list(Message)})
+            strip_and_write(Message),
+            ?LOG_NOTICE(#{message => Message})
         end,
         Choices
     ),
     % lists:map(fun(Stock) -> write_redis(map_response(Stock), State) end, ResponseBody),
     {noreply, State}.
+
+strip_and_write(Message) ->
+    Output = binary_to_list(Message),
+    FilteredOutput = lists:filter(fun(C) -> C /= $` end, Output),
+    file:write_file("/tmp/chatgpt.erl", FilteredOutput).
 
 write_redis(#{'_symbol' := Symbol} = Dto, #state{redis_key = Key, redis_conn = Conn}) ->
     {ok, _Result} = eredis:q(Conn, [
