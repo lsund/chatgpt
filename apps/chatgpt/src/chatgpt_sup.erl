@@ -21,7 +21,8 @@ restart_and_query() ->
                 <<"key">> := #{
                     <<"models">> := RedisKey
                 }
-            }
+            },
+            <<"outfile">> := Outfile
         }
     ] = yamerl:decode_file("config/simple.yaml", [
         str_node_as_binary, {map_node_format, map}
@@ -29,7 +30,7 @@ restart_and_query() ->
     ok = supervisor:terminate_child(?MODULE, client),
     ok = supervisor:delete_child(?MODULE, client),
     supervisor:start_child(?MODULE, #{
-        id => client, start => {chatgpt_client, start_link, [RedisKey, Data]}
+        id => client, start => {chatgpt_client, start_link, [RedisKey, Data, Outfile]}
     }).
 
 init([]) ->
@@ -41,6 +42,7 @@ init([]) ->
     [
         #{
             <<"requests_per_minute">> := Rate,
+            <<"outfile">> := Outfile,
             <<"openai">> := #{
                 <<"api_key">> := ApiKey,
                 <<"host">> := Host
@@ -66,7 +68,7 @@ init([]) ->
         #{
             id => client,
             start =>
-                {chatgpt_client, start_link, [RedisKey, Data]}
+                {chatgpt_client, start_link, [RedisKey, Data, Outfile]}
         }
     ],
     {ok, {SupFlags, ChildSpecs}}.

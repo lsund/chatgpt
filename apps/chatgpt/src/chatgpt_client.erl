@@ -2,11 +2,12 @@
 
 -module(chatgpt_client).
 
--export([start_link/2, handle_response/2]).
+-export([start_link/3, handle_response/2]).
 
 -behaviour(gen_server).
 
 -define(CREDITS, 1).
+-define(TMP_FILE, "/tmp/chatgpt").
 
 -export([
     init/1,
@@ -18,7 +19,8 @@
 -record(state, {
     redis_key :: binary(),
     redis_conn :: pid(),
-    data :: any()
+    data :: any(),
+    outfile :: binary()
 }).
 
 -record(response, {
@@ -26,21 +28,22 @@
     body :: map()
 }).
 
-start_link(RedisKey, Data) ->
+start_link(RedisKey, Data, Outfile) ->
     gen_server:start_link(
         {local, ?MODULE},
         ?MODULE,
-        #{redis_key => RedisKey, data => Data},
+        #{redis_key => RedisKey, data => Data, outfile => Outfile},
         []
     ).
 
-init(#{redis_key := RedisKey, data := Data}) ->
+init(#{redis_key := RedisKey, data := Data, outfile := Outfile}) ->
     {ok, RedisConn} = eredis:start_link(),
     do_requests(RedisKey),
     State = #state{
         redis_key = RedisKey,
         redis_conn = RedisConn,
-        data = Data
+        data = Data,
+        outfile = Outfile
     },
     {ok, State}.
 
@@ -68,40 +71,20 @@ handle_cast({handle_response, Response}, State) ->
     #{<<"choices">> := Choices} = ResponseBody,
     lists:foreach(
         fun(#{<<"message">> := #{<<"content">> := Message}}) ->
-            strip_and_write(Message),
-            ?LOG_NOTICE(#{message => Message})
+            strip_and_write(State#state.outfile, Message),
+            ?LOG_NOTICE(#{wrote_file => ?TMP_FILE}),
+            strip_and_write(?TMP_FILE, Message),
+            ?LOG_NOTICE(#{wrote_file => State#state.outfile}),
+            os:cmd("mplayer ./public/bell.wav")
         end,
         Choices
     ),
-    % lists:map(fun(Stock) -> write_redis(map_response(Stock), State) end, ResponseBody),
     {noreply, State}.
 
-strip_and_write(Message) ->
+strip_and_write(Outfile, Message) ->
     Output = binary_to_list(Message),
     FilteredOutput = lists:filter(fun(C) -> C /= $` end, Output),
-    file:write_file("/tmp/chatgpt.erl", FilteredOutput).
-
-write_redis(#{'_symbol' := Symbol} = Dto, #state{redis_key = Key, redis_conn = Conn}) ->
-    {ok, _Result} = eredis:q(Conn, [
-        "SET",
-        iolist_to_binary([Key, <<"/">>, Symbol]),
-        jsx:encode(Dto)
-    ]).
-
-map_response(#{
-    <<"symbol">> := Symbol,
-    <<"name">> := Name,
-    <<"currency">> := Currency,
-    <<"exchange">> := Exchange,
-    <<"country">> := Country
-}) ->
-    #{
-        '_symbol' => Symbol,
-        '_name' => Name,
-        '_currency' => Currency,
-        '_exchange' => Exchange,
-        '_country' => Country
-    }.
+    file:write_file(Outfile, FilteredOutput).
 
 handle_info(_Msg, State) ->
     {noreply, State}.
