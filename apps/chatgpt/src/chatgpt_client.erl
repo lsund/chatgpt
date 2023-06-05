@@ -8,6 +8,7 @@
 
 -define(CREDITS, 1).
 -define(TMP_FILE, "/tmp/chatgpt").
+-define(DATA_DIR, <<"data/">>).
 
 -export([
     init/1,
@@ -72,7 +73,9 @@ handle_cast({handle_response, Response}, State) ->
     lists:foreach(
         fun(#{<<"message">> := #{<<"content">> := Message}}) ->
             ?LOG_NOTICE(#{message => Message}),
-            strip_and_write(State#state.outfile, Message),
+            Outfile = State#state.outfile,
+            BaseDir = ?DATA_DIR,
+            strip_and_write(<<BaseDir/binary, Outfile/binary>>, Message),
             ?LOG_NOTICE(#{wrote_file => ?TMP_FILE}),
             strip_and_write(?TMP_FILE, Message),
             ?LOG_NOTICE(#{wrote_file => State#state.outfile}),

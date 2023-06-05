@@ -29,13 +29,13 @@ restart_and_query() ->
     ]),
     case supervisor:terminate_child(?MODULE, client) of
         ok ->
-            ok = supervisor:delete_child(?MODULE, client),
-            supervisor:start_child(?MODULE, #{
-                id => client, start => {chatgpt_client, start_link, [RedisKey, Data, Outfile]}
-            });
+            ok = supervisor:delete_child(?MODULE, client);
         _Something ->
             ?LOG_NOTICE(#{msg => not_running})
-    end.
+    end,
+    supervisor:start_child(?MODULE, #{
+        id => client, start => {chatgpt_client, start_link, [RedisKey, Data, Outfile]}
+    }).
 
 init([]) ->
     SupFlags = #{
@@ -46,21 +46,12 @@ init([]) ->
     [
         #{
             <<"requests_per_minute">> := Rate,
-            <<"outfile">> := Outfile,
             <<"openai">> := #{
                 <<"api_key">> := ApiKey,
                 <<"host">> := Host
-            },
-            <<"redis">> := #{
-                <<"key">> := #{
-                    <<"models">> := RedisKey
-                }
             }
         }
     ] = yamerl:decode_file("config/simple.yaml", [
-        str_node_as_binary, {map_node_format, map}
-    ]),
-    [Data] = yamerl:decode_file("config/data.yaml", [
         str_node_as_binary, {map_node_format, map}
     ]),
     ChildSpecs = [
@@ -68,11 +59,6 @@ init([]) ->
             id => throttler,
             start =>
                 {request_throttler, start_link, [Host, ApiKey, Rate]}
-        },
-        #{
-            id => client,
-            start =>
-                {chatgpt_client, start_link, [RedisKey, Data, Outfile]}
         }
     ],
     {ok, {SupFlags, ChildSpecs}}.
