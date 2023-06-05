@@ -27,11 +27,15 @@ restart_and_query() ->
     ] = yamerl:decode_file("config/simple.yaml", [
         str_node_as_binary, {map_node_format, map}
     ]),
-    ok = supervisor:terminate_child(?MODULE, client),
-    ok = supervisor:delete_child(?MODULE, client),
-    supervisor:start_child(?MODULE, #{
-        id => client, start => {chatgpt_client, start_link, [RedisKey, Data, Outfile]}
-    }).
+    case supervisor:terminate_child(?MODULE, client) of
+        ok ->
+            ok = supervisor:delete_child(?MODULE, client),
+            supervisor:start_child(?MODULE, #{
+                id => client, start => {chatgpt_client, start_link, [RedisKey, Data, Outfile]}
+            });
+        _Something ->
+            ?LOG_NOTICE(#{msg => not_running})
+    end.
 
 init([]) ->
     SupFlags = #{

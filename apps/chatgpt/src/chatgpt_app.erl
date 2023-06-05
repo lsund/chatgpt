@@ -10,4 +10,5 @@ stop(_State) -> ok.
 
 start(_, _) ->
     {ok, Pid} = chatgpt_sup:start_link(),
+    chatgpt_sup:restart_and_query(),
     {ok, Pid}.

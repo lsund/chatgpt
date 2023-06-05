@@ -71,11 +71,12 @@ handle_cast({handle_response, Response}, State) ->
     #{<<"choices">> := Choices} = ResponseBody,
     lists:foreach(
         fun(#{<<"message">> := #{<<"content">> := Message}}) ->
+            ?LOG_NOTICE(#{message => Message}),
             strip_and_write(State#state.outfile, Message),
             ?LOG_NOTICE(#{wrote_file => ?TMP_FILE}),
             strip_and_write(?TMP_FILE, Message),
             ?LOG_NOTICE(#{wrote_file => State#state.outfile}),
-            os:cmd("mplayer ./public/bell.wav")
+            os:cmd("mplayer ./local/bell.wav")
         end,
         Choices
     ),
