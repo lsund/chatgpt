@@ -6,8 +6,7 @@
     now_timestamp/0,
     to_iso/1,
     config_to_tuples/1,
-    find/2,
-    currency_to_tag/1
+    find/2
 ]).
 
 find(P, XS) ->
@@ -22,16 +21,6 @@ get_nested([Key | Keys], Map) -> get_nested(Keys, maps:get(Key, Map)).
 % Pad at most 0 zeroes to and make it a string
 maybe_zeropadded(Number) when Number < 10 -> lists:concat(["0", integer_to_list(Number)]);
 maybe_zeropadded(Number) -> integer_to_list(Number).
-
-currency_to_tag(Curr) ->
-    Conv = #{
-        eur => <<"EUR">>,
-        usd => <<"USD">>,
-        nok => <<"NOK">>,
-        dkk => <<"DKK">>,
-        sek => <<"SEK">>
-    },
-    maps:get(Curr, Conv).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Time
