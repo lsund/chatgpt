@@ -7,7 +7,7 @@
 -include_lib("include/logger.hrl").
 
 start() ->
-    {ok, _} = application:ensure_all_started(chatgpt),
+    restart(),
     ok.
 
 restart() ->
