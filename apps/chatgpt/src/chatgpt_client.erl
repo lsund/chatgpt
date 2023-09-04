@@ -8,7 +8,6 @@
 
 -define(CREDITS, 1).
 -define(TMP_FILE, "/tmp/chatgpt").
--define(DATA_DIR, <<"data/">>).
 
 -export([
     init/1,
