@@ -32,7 +32,8 @@ init(#{host := Host, api_key := ApiKey, rate := Rate}) ->
         #{
             connect_timeout => timer:seconds(15),
             retry => 3,
-            retry_timeout => timer:seconds(30)
+            retry_timeout => timer:seconds(30),
+            tls_opts => [{verify, verify_peer}, {cacerts, public_key:cacerts_get()}]
         }
     ),
     ?LOG_NOTICE(#{msg => connection_established, host => binary_to_list(Host)}),
