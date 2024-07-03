@@ -18,7 +18,7 @@
 
 -record(state, {
     redis_key :: binary(),
-    redis_conn :: pid(),
+    %redis_conn :: pid(),
     data :: any(),
     outfile :: binary()
 }).
@@ -37,11 +37,11 @@ start_link(RedisKey, Data, Outfile) ->
     ).
 
 init(#{redis_key := RedisKey, data := Data, outfile := Outfile}) ->
-    {ok, RedisConn} = eredis:start_link(),
+    %{ok, RedisConn} = eredis:start_link(),
     do_requests(RedisKey),
     State = #state{
         redis_key = RedisKey,
-        redis_conn = RedisConn,
+        %redis_conn = RedisConn,
         data = Data,
         outfile = Outfile
     },
