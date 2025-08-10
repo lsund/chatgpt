@@ -1,4 +1,4 @@
--include_lib("include/logger.hrl").
+-include_lib("kernel/include/logger.hrl").
 
 -module(chatgpt_client).
 
@@ -7,6 +7,7 @@
 -behaviour(gen_server).
 
 -define(CREDITS, 1).
+-define(SOUND_COMMAND, "/usr/bin/mplayer -af scaletempo=scale=3.0 speed=pitch -speed 10 ./public/bell-sound-370341.mp3").
 -define(TMP_FILE, "/tmp/chatgpt").
 
 -export([
@@ -14,6 +15,10 @@
     handle_info/2,
     handle_cast/2,
     handle_call/3
+]).
+
+-export([
+    test_os_cmd/0
 ]).
 
 -record(state, {
@@ -37,11 +42,9 @@ start_link(RedisKey, Data, Outfile) ->
     ).
 
 init(#{redis_key := RedisKey, data := Data, outfile := Outfile}) ->
-    % {ok, RedisConn} = eredis:start_link(),
     do_requests(RedisKey),
     State = #state{
         redis_key = RedisKey,
-        % redis_conn = RedisConn,
         data = Data,
         outfile = Outfile
     },
@@ -68,21 +71,23 @@ handle_cast({do_requests, Path}, State) ->
     {noreply, State};
 handle_cast({handle_response, Response}, State) ->
     ResponseBody = jsx:decode(Response#response.body, [return_maps]),
-    #{<<"choices">> := Choices} = ResponseBody,
+    #{~"choices" := Choices} = ResponseBody,
     lists:foreach(
-        fun(#{<<"message">> := #{<<"content">> := Message}}) ->
-            ?LOG_NOTICE(#{message => Message}),
-            % Outfile = State#state.outfile,
-            % BaseDir = ?DATA_DIR,
-            % strip_and_write(<<BaseDir/binary, Outfile/binary>>, Message),
-            ?LOG_NOTICE(#{wrote_file => ?TMP_FILE}),
+        fun(#{~"message" := #{~"content" := Message}}) ->
+            % TODO add ability to archive
+            ?LOG_NOTICE(#{wrote_tmp_file => ?TMP_FILE, wrote_out_file => State#state.outfile}),
             strip_and_write(?TMP_FILE, Message),
-            ?LOG_NOTICE(#{wrote_file => State#state.outfile}),
-            os:cmd("mplayer ./local/bell.wav")
+            %
+            os:cmd(?SOUND_COMMAND)
         end,
         Choices
     ),
     {noreply, State}.
+
+test_os_cmd() ->
+    Res = os:cmd(?SOUND_COMMAND),
+    Res.
+
 
 strip_and_write(Outfile, Message) ->
     Output = binary_to_list(Message),
